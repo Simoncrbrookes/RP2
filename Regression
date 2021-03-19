@@ -1,0 +1,207 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Mar 13 16:53:38 2021
+
+@author: brony
+
+This code runs all of the regression machine learning methods: KNN, Tree,
+Forest, and SVR. It uses one single dataset with the same split.
+
+Link to original screens:
+http://idr.openmicroscopy.org/webclient/?show=screen-1801
+"""
+# name of dataset containing: NF, LCD, NucleusArea, CellArea, percentProtrusion, 
+# protrusion_extent, NucIntegratedH, logNucbyRing488 (Yap), and location data
+Filename = 'RP2_0445_DATA.csv'
+#Filename2 = 'RP2_ALL_Data.csv'
+
+# import required libraries and functions
+import numpy as np
+import pandas as pd
+import time
+from sklearn.model_selection import train_test_split as tts
+from sklearn.preprocessing import StandardScaler
+from sklearn.tree import DecisionTreeRegressor
+from sklearn import metrics as mets
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.svm import SVR
+from sklearn.linear_model import LinearRegression
+
+# prepare datasets for all machine learning models:
+# open dataset file
+df = pd.read_csv(Filename, header = 0)
+data = df.to_numpy()
+
+#df = pd.read_csv(Filename2, header = 0)
+#data2 = df.to_numpy()
+
+# select YAP ratio (dependent variable)
+Y = data[:,7]
+#Y2 = data2[:,7]
+
+# select other features (independent variable)
+X = data[:, 0:7]
+
+X_train, X, Y_train, Y = tts(X, Y, test_size = 0.5)
+#X2 = data2[:, 0:7]
+# split the data into testing and training sets 
+X_train, X_test, Y_train, Y_test = tts(X, Y, test_size = 0.2)
+#X_train2, X_test2, Y_train2, Y_test2 = tts(X2, Y2, test_size = 0.2)
+#Y_test = Y_test2
+#X_test = X_test2
+
+'''
+# prepare datasets for all machine learning models:
+# open dataset file
+df = pd.read_csv(Filename, header = 0)
+data = df.to_numpy()
+
+# select YAP ratio (dependent variable)
+Y = data[:,7]
+
+# select other features (independent variable)
+X = data[:, 0:7]
+
+# split the data into testing and training sets 
+X_train, X_test, Y_train, Y_test = tts(X, Y, test_size = 0.2)
+
+'''
+
+# normalise the training and testing data
+scaler = StandardScaler()
+scaler.fit(X_train)
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
+
+
+# create functions for each of the machine learning models:
+
+# Linear Regression
+def regressionLinear(X_train, X_test, Y_train, Y_test):
+    # train the regression model
+    regressor = LinearRegression()
+    regressor.fit(X_train, Y_train.reshape(-1,1))
+    
+    # use trained model to predict Y values based on X_test testing dataset 
+    Y_pred = regressor.predict(X_test)
+    
+    # calculate model metrics
+    r = mets.r2_score(Y_test, Y_pred)
+    mse = mets.mean_squared_error(Y_test, Y_pred, squared = False)
+    Y_pred = np.vstack((r, mse, Y_pred.reshape(-1,1)))
+    return(Y_pred, r, mse)    
+
+
+# Regression tree
+def regressionTree(X_train, X_test, Y_train, Y_test):
+    # train the regression model
+    regressor = DecisionTreeRegressor(max_depth = 10, min_samples_leaf = 60)
+    regressor.fit(X_train, Y_train.reshape(-1,1))
+    
+    # use trained model to predict Y values based on X_test testing dataset 
+    Y_pred = regressor.predict(X_test)
+    
+    # calculate model metrics
+    r = mets.r2_score(Y_test, Y_pred)
+    mse = mets.mean_squared_error(Y_test, Y_pred, squared = False)
+    Y_pred = np.vstack((r, mse, Y_pred.reshape(-1,1)))
+    return(Y_pred, r, mse)
+
+# K Nearest Neighbours regression
+def regressionKNN(X_train, X_test, Y_train, Y_test):
+    # train the regression model
+    regressor = KNeighborsRegressor(n_neighbors = 10)
+    regressor.fit(X_train, Y_train.reshape(-1,1))
+    
+    # use trained model to predict Y values based on X_test testing dataset 
+    Y_pred = regressor.predict(X_test)
+    
+    # calculate model metrics
+    r = mets.r2_score(Y_test, Y_pred)
+    mse = mets.mean_squared_error(Y_test, Y_pred, squared = False) 
+    Y_pred = np.vstack((r, mse, Y_pred.reshape(-1,1)))    
+    return(Y_pred, r, mse)
+
+# Random forest regression  
+def regressionForest(X_train, X_test, Y_train, Y_test):
+    # train the regression model
+    regressor = RandomForestRegressor(n_estimators=100, max_depth=10, 
+                                      min_samples_leaf=60)
+    regressor.fit(X_train, Y_train)
+    
+    # use trained model to predict Y values based on X_test testing dataset 
+    Y_pred = regressor.predict(X_test)
+    
+    # calculate model metrics
+    r = mets.r2_score(Y_test, Y_pred)
+    mse = mets.mean_squared_error(Y_test, Y_pred, squared = False)  
+    Y_pred = np.vstack((r, mse, Y_pred.reshape(-1,1)))
+    return(Y_pred, r, mse)    
+    
+# Support Vector Regression
+def regressionSVR(X_train, X_test, Y_train, Y_test):
+    # train the regression model
+    regressor = SVR(kernel = 'rbf')
+    regressor.fit(X_train, Y_train)
+    
+    # use trained model to predict Y values based on X_test testing dataset 
+    Y_pred = regressor.predict(X_test)
+    
+    # calculate model metrics
+    r = mets.r2_score(Y_test, Y_pred)
+    mse = mets.mean_squared_error(Y_test, Y_pred, squared = False)   
+    Y_pred = np.vstack((r, mse, Y_pred.reshape(-1,1)))
+    return(Y_pred, r, mse)    
+
+
+print('Dataset: ' + Filename)
+print('\n')
+
+times = list()
+times.append(100)
+
+start = time.time()
+Lin_pred, Lin_r, Lin_mse = regressionLinear(X_train, X_test, Y_train, Y_test)
+print('Linear R^2: ' + str(Lin_r))
+print('Linear MSE: ' + str(Lin_mse))
+print('\n')
+end = time.time()
+times.append(end - start)
+
+start = time.time()
+Tree_pred, Tree_r, Tree_mse = regressionTree(X_train, X_test, Y_train, Y_test)
+print('Tree R^2: ' + str(Tree_r))
+print('Tree MSE: ' + str(Tree_mse))
+print('\n')
+end = time.time()
+times.append(end - start)
+
+start = time.time()
+KNN_pred, KNN_r, KNN_mse = regressionKNN(X_train, X_test, Y_train, Y_test)
+print('KNN R^2: ' + str(KNN_r))
+print('KNN MSE: ' + str(KNN_mse))
+print('\n')
+end = time.time()
+times.append(end - start)
+
+start = time.time()
+F_pred, F_r, F_mse = regressionForest(X_train, X_test, Y_train, Y_test)
+print('Forest R^2: ' + str(F_r))
+print('Forest MSE: ' + str(F_mse))
+print('\n')
+end = time.time()
+times.append(end - start)
+
+start = time.time()
+SVR_pred, SVR_r, SVR_mse = regressionSVR(X_train, X_test, Y_train, Y_test)
+print('SVR R^2: ' + str(SVR_r))
+print('SVR MSE: ' + str(SVR_mse))
+end = time.time()
+times.append(end - start)
+
+Y_test = np.vstack((100, 100, Y_test.reshape(-1,1)))
+output = np.hstack((Y_test, Lin_pred, Tree_pred, KNN_pred, F_pred, SVR_pred))
+output = np.vstack((times, output))
+name = Filename[:-4] + '_Regressions.csv'
+np.savetxt(name, (output), delimiter=',')
