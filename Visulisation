@@ -1,0 +1,84 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Mar 13 20:59:30 2021
+
+@author: brony
+"""
+
+import pandas as pd 
+import matplotlib.pyplot as plt
+import numpy as np
+
+Filename = 'RP2_0445_DATA_Regressions.csv'
+df = pd.read_csv(Filename, header=None)
+data = df.to_numpy()
+names = ['Y_test', 'Linear', 'Tree', 'KNN', 'Forest', 'SVR']
+header = ['True value', 'Linear Regression', 'Decision Tree', 
+          'K Nearest Neighbours Regression', 'Random Forest Regression', 
+          'Support Vector Regression']
+
+times = data[0, 1:]
+r_vals = data[1, :]
+mse_vals = data[2, :]
+results = data[3:, :]
+size = (8, 6)
+
+y, x = np.shape(results)
+y = range(y)
+x = range(x)
+
+for i in x:
+    fig = plt.figure(figsize=size)
+    plt.plot(y, results[:,0], linewidth = 1.2, color = 'green', label = 'True Value')
+    plt.plot(y, results[:,0]+0.1, linewidth = 0.2, color = 'green')
+    plt.plot(y, results[:,0]-0.1, linewidth = 0.2, color = 'green')
+    plt.fill_between(y, results[:,0]+0.1, results[:,0]-0.1, color = 'azure', label = '0.1 Margin of Error')
+    plt.plot(y, results[:,i], 'o', markersize = 0.3, color = 'darkcyan', label = 'Predicted Value')
+    plt.ylim([-0.3, 0.6])
+    plt.xlim([-10, len(y)+10])
+    title = Filename[4:13] + ' ' + header[i] + '\n' + 'R-Squared: ' + str(r_vals[i]) + '     RMSE: ' + str(mse_vals[i])
+    plt.title(title)
+    plt.xlabel('Sample Number - Ordered by True YAP/TAZ Ratio')
+    plt.ylabel('YAP/TAZ Ratio')
+    plt.legend(loc = 4)
+    fig.savefig(Filename[0:13] + '_FIGS_' + names[i] + '_smear.png')
+    
+for i in x:
+    fig = plt.figure(figsize=size)
+    plt.plot(results[:,0], results[:,i], 'o', markersize = 0.3, color = 'green')
+    plt.plot([-0.3, 0.6], [-0.3, 0.6], linewidth = 1, color = 'lawngreen', label = 'y = x')
+    plt.ylim([-0.3, 0.6])
+    plt.xlim([-0.3, 0.6]) 
+    title = Filename[4:13] + ' ' + header[i] + '\n' + 'R-Squared: ' + str(r_vals[i]) + '     RMSE: ' + str(mse_vals[i])
+    plt.title(title)
+    plt.xlabel('True YAP/TAZ Ratios')
+    plt.ylabel('Predicted YAP/TAZ Ratios')
+    plt.legend(loc = 4)
+    fig.savefig(Filename[0:13] + '_FIGS_' + names[i] + '_xy.png')
+
+r_vals = r_vals[1:]
+mse_vals = mse_vals[1:]
+
+colors = ['green', 'mediumseagreen', 'lightgreen', 'mediumspringgreen', 'lawngreen']
+
+fig = plt.figure(figsize=size)
+for i in range(len(r_vals)):
+    plt.plot(times[i], r_vals[i], 'h', markersize = 10, label = names[i+1], color = colors[i])   
+
+title = 'R-Squared Plotted Against Time'
+plt.title(title)
+plt.xlabel('Time in Seconds')
+plt.ylabel('R-Squared Value')
+plt.legend()
+fig.savefig(Filename[0:13] + '_FIGS_R-vals')
+
+fig = plt.figure(figsize=size)
+for i in range(len(r_vals)):
+    plt.plot(times[i], mse_vals[i], 'h', markersize = 10, label = names[i+1], color = colors[i])   
+
+title = 'Mean Squared Error (MSE) Plotted Against Time'
+plt.title(title)
+plt.xlabel('Time in Seconds')
+plt.ylabel('MSE-Value')
+plt.legend()
+fig.savefig(Filename[0:13] + '_FIGS_MSE-vals')
