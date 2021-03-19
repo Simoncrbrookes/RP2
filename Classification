@@ -1,0 +1,191 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Mar 16 16:21:46 2021
+
+@author: brony
+
+This code runs all of the regression machine learning methods: KNN, Tree,
+Forest, and SVR. It uses one single dataset with the same split.
+
+Link to original screens:
+http://idr.openmicroscopy.org/webclient/?show=screen-1801
+"""
+# name of dataset containing: NF, LCD, NucleusArea, CellArea, percentProtrusion, 
+# protrusion_extent, NucIntegratedH, logNucbyRing488 (Yap), and location data
+Filename = 'RP2_0446_DATA.csv'
+#Filename2 = 'RP2_0446_Data.csv'
+
+# import required libraries and functions
+import numpy as np
+import pandas as pd
+import time
+from sklearn.model_selection import train_test_split as tts
+from sklearn.preprocessing import StandardScaler
+from sklearn.tree import DecisionTreeClassifier
+from sklearn import metrics as mets
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+
+# prepare datasets for all machine learning models:
+# open dataset file
+df = pd.read_csv(Filename, header = 0)
+data = df.to_numpy()
+
+#df = pd.read_csv(Filename2, header = 0)
+#data2 = df.to_numpy()
+
+# select YAP ratio (dependent variable)
+Y = data[:,8]
+#Y2 = data2[:,8]
+
+# select other features (independent variable)
+X = data[:, 0:7]
+#X2 = data2[:, 0:7]
+# split the data into testing and training sets 
+X_train, X_test, Y_train, Y_test = tts(X, Y, test_size = 0.2)
+#X_train2, X_test2, Y_train2, Y_test2 = tts(X2, Y2, test_size = 0.2)
+#Y_test = Y_test2
+#X_test = X_test2
+
+
+# normalise the training and testing data
+scaler = StandardScaler()
+scaler.fit(X_train)
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
+
+# create functions for each of the machine learning models:
+
+# Linear Regression
+def classificationLogistic(X_train, X_test, Y_train, Y_test):
+    # train the regression model
+    regressor = LogisticRegression()
+    regressor.fit(X_train, Y_train)
+    
+    # use trained model to predict Y values based on X_test testing dataset 
+    Y_pred = regressor.predict(X_test)
+    
+    # calculate model metrics
+    f1 = mets.f1_score(Y_test, Y_pred, average = 'weighted')
+    mse = mets.mean_squared_error(Y_test, Y_pred, squared = False)
+    Y_pred = np.vstack((f1, mse, Y_pred.reshape(-1,1)))
+    return(Y_pred, f1, mse)    
+
+
+# Regression tree
+def classificationTree(X_train, X_test, Y_train, Y_test):
+    # train the regression model
+    regressor = DecisionTreeClassifier(max_depth = 10, min_samples_leaf = 60)
+    regressor.fit(X_train, Y_train)
+    
+    # use trained model to predict Y values based on X_test testing dataset 
+    Y_pred = regressor.predict(X_test)
+    
+    # calculate model metrics
+    f1 = mets.f1_score(Y_test, Y_pred, average = 'weighted')
+    mse = mets.mean_squared_error(Y_test, Y_pred, squared = False)
+    
+    Y_pred = np.vstack((f1, mse, Y_pred.reshape(-1,1)))
+    return(Y_pred, f1, mse)
+
+# K Nearest Neighbours regression
+def classificationKNN(X_train, X_test, Y_train, Y_test):
+    # train the regression model
+    regressor = KNeighborsClassifier(n_neighbors = 10)
+    regressor.fit(X_train, Y_train)
+    
+    # use trained model to predict Y values based on X_test testing dataset 
+    Y_pred = regressor.predict(X_test)
+
+    # calculate model metrics
+    f1 = mets.f1_score(Y_test, Y_pred, average = 'weighted')
+    mse = mets.mean_squared_error(Y_test, Y_pred, squared = False)
+    Y_pred = np.vstack((f1, mse, Y_pred.reshape(-1,1)))
+    return(Y_pred, f1, mse)       
+
+# Random forest regression  
+def classificationForest(X_train, X_test, Y_train, Y_test):
+    # train the regression model
+    regressor = RandomForestClassifier(n_estimators=100, max_depth=10, 
+                                      min_samples_leaf=60, random_state = 0)
+    regressor.fit(X_train, Y_train)
+    
+    # use trained model to predict Y values based on X_test testing dataset 
+    Y_pred = regressor.predict(X_test)
+
+    # calculate model metrics
+    f1 = mets.f1_score(Y_test, Y_pred, average = 'weighted')
+    mse = mets.mean_squared_error(Y_test, Y_pred, squared = False)
+    Y_pred = np.vstack((f1, mse, Y_pred.reshape(-1,1)))
+    return(Y_pred, f1, mse)       
+    
+# Support Vector Regression
+def classificationSVM(X_train, X_test, Y_train, Y_test):
+    # train the regression model
+    regressor = SVC(kernel = 'rbf')
+    regressor.fit(X_train, Y_train)
+    
+    # use trained model to predict Y values based on X_test testing dataset 
+    Y_pred = regressor.predict(X_test)
+    
+    # calculate model metrics
+    f1 = mets.f1_score(Y_test, Y_pred, average = 'weighted')
+    mse = mets.mean_squared_error(Y_test, Y_pred, squared = False)
+    Y_pred = np.vstack((f1, mse, Y_pred.reshape(-1,1)))
+    return(Y_pred, f1, mse)       
+
+
+print('Dataset: ' + Filename)
+print('\n')
+
+times = list()
+times.append(100)
+
+start = time.time()
+Log_pred, Log_f1 , Log_mse= classificationLogistic(X_train, X_test, Y_train, Y_test)
+print('Logistic F1: ' + str(Log_f1))
+print('Logistic MSE: ' + str(Log_mse))
+print('\n')
+end = time.time()
+times.append(end - start)
+
+start = time.time()
+Tree_pred, Tree_f1, Tree_mse = classificationTree(X_train, X_test, Y_train, Y_test)
+print('Tree F1: ' + str(Tree_f1))
+print('Tree MSE: ' + str(Tree_mse))
+print('\n')
+end = time.time()
+times.append(end - start)
+
+start = time.time()
+KNN_pred, KNN_f1, KNN_mse = classificationKNN(X_train, X_test, Y_train, Y_test)
+print('KNN F1: ' + str(KNN_f1))
+print('KNN MSE: ' + str(KNN_mse))
+print('\n')
+end = time.time()
+times.append(end - start)
+
+start = time.time()
+F_pred, F_f1, F_mse = classificationForest(X_train, X_test, Y_train, Y_test)
+print('Forest F1: ' + str(F_f1))
+print('Forest MSE: ' + str(F_mse))
+print('\n')
+end = time.time()
+times.append(end - start)
+
+start = time.time()
+SVM_pred, SVM_f1, SVM_mse = classificationSVM(X_train, X_test, Y_train, Y_test)
+print('SVM R^2: ' + str(SVM_f1))
+print('SVM MSE: ' + str(SVM_mse))
+end = time.time()
+times.append(end - start)
+
+
+Y_test = np.vstack((100, 100, Y_test.reshape(-1,1)))
+output = np.hstack((Y_test, Log_pred, Tree_pred, KNN_pred, F_pred, SVM_pred))
+output = np.vstack((times, output))
+
+#name = Filename[:-4] + '_Regressions.csv'
+#np.savetxt(name, (output), delimiter=',')
